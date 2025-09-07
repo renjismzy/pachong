@@ -5,13 +5,16 @@
 ## 部署前准备
 
 1. **环境变量配置**
-   在 Vercel 项目设置中添加以下环境变量：
-   ```
-   FEISHU_APP_ID=你的飞书应用ID
-   FEISHU_APP_SECRET=你的飞书应用密钥
-   DEEPSEEK_API_KEY=你的DeepSeek API密钥
-   SECRET_KEY=你的Flask密钥
-   ```
+   在 Vercel 项目设置的 Environment Variables 页面中添加以下环境变量：
+   
+   | 变量名 | 值 | 环境 |
+   |--------|----|---------|
+   | `FEISHU_APP_ID` | 你的飞书应用ID | Production, Preview, Development |
+   | `FEISHU_APP_SECRET` | 你的飞书应用密钥 | Production, Preview, Development |
+   | `DEEPSEEK_API_KEY` | 你的DeepSeek API密钥 | Production, Preview, Development |
+   | `SECRET_KEY` | 你的Flask密钥 | Production, Preview, Development |
+   
+   **重要**：不要在 `vercel.json` 中使用 `@secret_name` 引用，直接在 Vercel 控制台设置环境变量即可。
 
 2. **文件结构**
    ```
@@ -68,16 +71,22 @@
    - 检查 `api/index.py` 文件存在
    - 验证项目结构符合 Vercel 要求
 
-2. **Conflicting functions and builds configuration**
+2. **Environment Variable Secret Reference Error**
+   - 错误信息：`Environment Variable "FEISHU_APP_ID" references Secret "feishu_app_id", which does not exist`
+   - 解决方案：不要在 `vercel.json` 中使用 `@secret_name` 语法
+   - 直接在 Vercel 控制台的 Environment Variables 页面设置变量
+   - 已修复：移除了 `vercel.json` 中的 `env` 配置
+
+3. **Conflicting functions and builds configuration**
    - 已修复：移除了冲突的 `builds` 和 `routes` 配置
    - 现在使用现代的 `functions` 和 `rewrites` 配置
    - 指定了 Python 3.9 运行时
 
-3. **导入模块失败**
+4. **导入模块失败**
    - 检查 `api/requirements.txt` 包含所需依赖
    - 确保环境变量配置正确
 
-4. **函数超时**
+5. **函数超时**
    - 已设置 30 秒超时时间
    - Vercel 免费版有执行时间限制
    - 考虑升级到 Pro 版本或优化爬虫逻辑
