@@ -96,6 +96,19 @@
    - Vercel 免费版有执行时间限制
    - 考虑升级到 Pro 版本或优化爬虫逻辑
 
+7. **500内部服务器错误 (FUNCTION_INVOCATION_FAILED)**
+   - 错误信息：`500: INTERNAL_SERVER_ERROR, Code: FUNCTION_INVOCATION_FAILED`
+   - 原因：通常由以下问题引起：
+     - Flask应用初始化失败
+     - 模板或静态文件路径错误
+     - 导入模块失败
+     - 入口点配置错误
+   - 解决方案：
+     - 确保 `api/index.py` 直接导出Flask应用实例
+     - 添加异常处理来处理缺失的模板文件
+     - 使用健康检查端点 `/health` 来验证服务状态
+     - 检查Vercel函数日志获取详细错误信息
+
 ## 本地测试
 
 在部署前，可以本地测试 Vercel 版本：

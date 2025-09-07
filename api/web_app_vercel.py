@@ -35,7 +35,20 @@ except ImportError as e:
     def get_all_records(): return []
 
 # 初始化Flask应用
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+try:
+    # 尝试使用相对路径
+    template_dir = Path(__file__).parent.parent / 'templates'
+    static_dir = Path(__file__).parent.parent / 'static'
+    
+    if template_dir.exists() and static_dir.exists():
+        app = Flask(__name__, template_folder=str(template_dir), static_folder=str(static_dir))
+    else:
+        # 如果路径不存在，使用默认配置
+        app = Flask(__name__)
+except Exception as e:
+    print(f"Flask初始化警告: {e}")
+    app = Flask(__name__)
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'crawler_web_ui_secret_key')
 CORS(app)
 
@@ -119,7 +132,34 @@ def run_crawler_task(platform, filter_date=None):
 @app.route('/')
 def index():
     """主页面"""
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        # 如果模板不存在，返回简单的HTML页面
+        return f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>爬虫管理系统</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            <h1>爬虫管理系统</h1>
+            <p>系统正在运行中...</p>
+            <p>API端点:</p>
+            <ul>
+                <li><a href="/api/status">/api/status</a> - 获取系统状态</li>
+                <li><a href="/api/competitions">/api/competitions</a> - 获取比赛数据</li>
+            </ul>
+            <p>错误信息: {str(e)}</p>
+        </body>
+        </html>
+        '''
+
+@app.route('/health')
+def health_check():
+    """健康检查端点"""
+    return {'status': 'ok', 'message': 'Service is running'}
 
 @app.route('/api/status')
 def get_status():
