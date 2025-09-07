@@ -562,7 +562,26 @@ def batch_insert_to_feishu(records_data, batch_size=10):
     print(f"\n📊 批量插入完成: 成功 {success_count} 条，失败 {failed_count} 条")
     return success_count, failed_count
 
-def crawl_wechat(biz, token, cookie):
+def crawl_wechat(biz, token, cookie, filter_date=None):
+    """爬取微信公众号比赛信息
+    
+    Args:
+        biz: 公众号BIZ ID
+        token: 访问令牌
+        cookie: 访问Cookie
+        filter_date (str, optional): 筛选日期，格式为YYYY-MM-DD。如果提供，只爬取在该日期之后结束的比赛
+    """
+    # 解析筛选日期
+    filter_datetime = None
+    if filter_date:
+        try:
+            filter_datetime = datetime.datetime.strptime(filter_date, '%Y-%m-%d')
+            print(f"🚀 开始爬取微信公众号比赛信息（筛选日期: {filter_date}）...")
+        except ValueError:
+            print(f"❌ 日期格式错误: {filter_date}，应为YYYY-MM-DD格式")
+            return
+    else:
+        print("🚀 开始爬取微信公众号比赛信息...")
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
         'Cookie': cookie
@@ -594,7 +613,26 @@ def crawl_wechat(biz, token, cookie):
             if '赛' in item['title']:
                 link = item['link']
                 participants, prize, start_date, end_date = get_details(link)  # Reuse get_details for article
-                if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
+                
+                # 根据筛选条件判断是否处理比赛
+                should_process = False
+                
+                if filter_datetime:
+                    # 如果有筛选日期，只处理在筛选日期之后结束的比赛（未结束的比赛）
+                    if end_date and end_date >= filter_datetime:
+                        should_process = True
+                        print(f"✅ 收集未结束比赛: {item['title']} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                    else:
+                        print(f"⏭️ 跳过已结束比赛: {item['title']} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                else:
+                    # 原有逻辑：只处理有效的比赛数据（进行中或即将开始的比赛）
+                    if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
+                        should_process = True
+                        print(f"✅ 收集比赛: {item['title']}")
+                    else:
+                        print(f"⏭️ 跳过过期比赛: {item['title']}")
+                
+                if should_process:
                     print(f"Title: {item['title']}")
                     print(f"Link: {item['link']}")
                     print(f"Create Time: {item['create_time']}")
@@ -743,13 +781,29 @@ def get_comments(biz, token, cookie, appmsgid, idx):
         print("Failed to fetch comments:", data)
         return []
 
-def crawl_baidu():
-    """爬取百度AI Studio比赛信息"""
-    print("🚀 开始爬取百度AI Studio比赛信息...")
+def crawl_baidu(filter_date=None):
+    """爬取百度AI Studio比赛信息
+    
+    Args:
+        filter_date (str, optional): 筛选日期，格式为YYYY-MM-DD。如果提供，只爬取在该日期之后结束的比赛
+    """
+    if filter_date:
+        print(f"🚀 开始爬取百度AI Studio比赛信息（筛选日期: {filter_date}）...")
+    else:
+        print("🚀 开始爬取百度AI Studio比赛信息...")
     base_url = "https://aistudio.baidu.com/studio/match/search?pageSize=10&matchType=0&matchStatus=1&keyword=&orderBy=0"
     page = 1
     success_count = 0
     failed_count = 0
+    
+    # 解析筛选日期
+    filter_datetime = None
+    if filter_date:
+        try:
+            filter_datetime = datetime.datetime.strptime(filter_date, '%Y-%m-%d')
+        except ValueError:
+            print(f"❌ 日期格式错误: {filter_date}，应为YYYY-MM-DD格式")
+            return
     
     # 检查飞书配置
     if not app_id or not app_secret:
@@ -781,14 +835,29 @@ def crawl_baidu():
             for item in items:
                 name = item['matchName']
                 intro = item['matchAbs']
-                link = f"https://aistudio.baidu.com/studio/match/detail/{item['id']}"
+                link = f"https://aistudio.baidu.com/competition/detail/{item['id']}"
                 
                 participants, prize, start_date, end_date = get_details(link)
 
-                # 只处理有效的比赛数据（进行中或即将开始的比赛）
-                if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
-                    print(f"✅ 收集比赛: {name}")
-                    
+                # 根据筛选条件判断是否处理比赛
+                should_process = False
+                
+                if filter_datetime:
+                    # 如果有筛选日期，只处理在筛选日期之后结束的比赛（未结束的比赛）
+                    if end_date and end_date >= filter_datetime:
+                        should_process = True
+                        print(f"✅ 收集未结束比赛: {name} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                    else:
+                        print(f"⏭️ 跳过已结束比赛: {name} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                else:
+                    # 原有逻辑：只处理有效的比赛数据（进行中或即将开始的比赛）
+                    if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
+                        should_process = True
+                        print(f"✅ 收集比赛: {name}")
+                    else:
+                        print(f"⏭️ 跳过过期比赛: {name}")
+                
+                if should_process:
                     # 立即插入到飞书表格，传递介绍信息用于AI分析
                     if insert_to_feishu(name, link, start_date, end_date, "", "", "", intro):
                         success_count += 1
@@ -799,8 +868,6 @@ def crawl_baidu():
                     
                     # 每次插入后稍作延迟，避免频率限制
                     time.sleep(1)
-                else:
-                    print(f"⏭️ 跳过过期比赛: {name}")
                     
             page += 1
             time.sleep(2)  # 页面间延迟
@@ -815,9 +882,25 @@ def crawl_baidu():
     # 输出统计信息
     print(f"\n📊 百度AI Studio爬取完成: 成功导入 {success_count} 条，失败 {failed_count} 条")
 
-def crawl_aliyun():
-    """爬取阿里天池比赛信息"""
-    print("🚀 开始爬取阿里天池比赛信息...")
+def crawl_aliyun(filter_date=None):
+    """爬取阿里天池比赛信息
+    
+    Args:
+        filter_date (str, optional): 筛选日期，格式为YYYY-MM-DD。如果提供，只爬取在该日期之后结束的比赛
+    """
+    if filter_date:
+        print(f"🚀 开始爬取阿里天池比赛信息（筛选日期: {filter_date}）...")
+    else:
+        print("🚀 开始爬取阿里天池比赛信息...")
+    
+    # 解析筛选日期
+    filter_datetime = None
+    if filter_date:
+        try:
+            filter_datetime = datetime.datetime.strptime(filter_date, '%Y-%m-%d')
+        except ValueError:
+            print(f"❌ 日期格式错误: {filter_date}，应为YYYY-MM-DD格式")
+            return
     base_url = "https://tianchi.aliyun.com/v3/proxy/competition/api/race/page?visualTab=&raceName=&isActive="
     page = 1
     success_count = 0
@@ -884,10 +967,25 @@ def crawl_aliyun():
                 start_date = api_start_date or page_start_date
                 end_date = api_end_date or page_end_date
                 
-                # 只处理有效的比赛数据（进行中或即将开始的比赛）
-                if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
-                    print(f"✅ 收集比赛: {name}")
-                    
+                # 根据筛选条件判断是否处理比赛
+                should_process = False
+                
+                if filter_datetime:
+                    # 如果有筛选日期，只处理在筛选日期之后结束的比赛（未结束的比赛）
+                    if end_date and end_date >= filter_datetime:
+                        should_process = True
+                        print(f"✅ 收集未结束比赛: {name} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                    else:
+                        print(f"⏭️ 跳过已结束比赛: {name} (结束时间: {end_date.strftime('%Y-%m-%d') if end_date else 'Unknown'})")
+                else:
+                    # 原有逻辑：只处理有效的比赛数据（进行中或即将开始的比赛）
+                    if (start_date is None or start_date <= datetime.datetime.now()) and (end_date is None or end_date >= datetime.datetime.now()):
+                        should_process = True
+                        print(f"✅ 收集比赛: {name}")
+                    else:
+                        print(f"⏭️ 跳过过期比赛: {name}")
+                
+                if should_process:
                     # 立即插入到飞书表格，传递介绍信息用于AI分析
                     if insert_to_feishu(name, link, start_date, end_date, "", "", "", intro):
                         success_count += 1
@@ -898,8 +996,6 @@ def crawl_aliyun():
                     
                     # 每次插入后稍作延迟，避免频率限制
                     time.sleep(1)
-                else:
-                    print(f"⏭️ 跳过过期比赛: {name}")
                     
             page += 1
             time.sleep(2)  # 页面间延迟
@@ -914,9 +1010,25 @@ def crawl_aliyun():
     # 输出统计信息
     print(f"\n📊 阿里天池爬取完成: 成功导入 {success_count} 条，失败 {failed_count} 条")
 
-def crawl_tencent():
-    """爬取腾讯CSDN博客比赛信息"""
-    print("🚀 开始爬取腾讯CSDN博客比赛信息...")
+def crawl_tencent(filter_date=None):
+    """爬取腾讯CSDN博客比赛信息
+    
+    Args:
+        filter_date (str, optional): 筛选日期，格式为YYYY-MM-DD。如果提供，只爬取在该日期之后结束的比赛
+    """
+    if filter_date:
+        print(f"🚀 开始爬取腾讯CSDN博客比赛信息（筛选日期: {filter_date}）...")
+    else:
+        print("🚀 开始爬取腾讯CSDN博客比赛信息...")
+    
+    # 解析筛选日期
+    filter_datetime = None
+    if filter_date:
+        try:
+            filter_datetime = datetime.datetime.strptime(filter_date, '%Y-%m-%d')
+        except ValueError:
+            print(f"❌ 日期格式错误: {filter_date}，应为YYYY-MM-DD格式")
+            return
     success_count = 0
     failed_count = 0
     

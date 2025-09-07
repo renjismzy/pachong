@@ -128,16 +128,41 @@ def run_daily_crawl():
         logger.warning(f"⚠️ 有 {total_platforms - success_count} 个平台爬取失败")
     logger.info("="*60)
 
-def run_scheduler():
-    """运行定时调度器"""
+def run_scheduler(frequency="daily", time_str="09:00", weekday=None):
+    """运行定时调度器
+    
+    Args:
+        frequency (str): 执行频率 - "daily", "weekly", "monthly"
+        time_str (str): 执行时间，格式为 "HH:MM"
+        weekday (str): 当frequency为"weekly"时指定星期几 (monday, tuesday, etc.)
+    """
     logger.info("🕘 定时任务调度器启动")
-    logger.info("📅 计划任务: 每天早上9:00执行爬虫任务")
     
-    # 设置定时任务：每天早上9点执行
-    schedule.every().day.at("09:00").do(run_daily_crawl)
+    # 清除所有现有任务
+    schedule.clear()
     
-    # 可选：添加测试任务（每分钟执行一次，用于测试）
-    # schedule.every().minute.do(run_daily_crawl)
+    # 根据频率设置定时任务
+    if frequency == "daily":
+        schedule.every().day.at(time_str).do(run_daily_crawl)
+        logger.info(f"📅 计划任务: 每天 {time_str} 执行爬虫任务")
+    elif frequency == "weekly":
+        if weekday:
+            getattr(schedule.every(), weekday.lower()).at(time_str).do(run_daily_crawl)
+            logger.info(f"📅 计划任务: 每周{weekday} {time_str} 执行爬虫任务")
+        else:
+            schedule.every().monday.at(time_str).do(run_daily_crawl)
+            logger.info(f"📅 计划任务: 每周一 {time_str} 执行爬虫任务")
+    elif frequency == "monthly":
+        # 每月1号执行
+        def monthly_job():
+            if datetime.datetime.now().day == 1:
+                run_daily_crawl()
+        
+        schedule.every().day.at(time_str).do(monthly_job)
+        logger.info(f"📅 计划任务: 每月1号 {time_str} 执行爬虫任务")
+    else:
+        logger.error(f"❌ 不支持的频率: {frequency}")
+        return
     
     logger.info("⏰ 等待定时任务触发...")
     
@@ -167,6 +192,22 @@ if __name__ == "__main__":
         default="schedule",
         help="运行模式: schedule(定时调度) 或 once(立即执行)"
     )
+    parser.add_argument(
+        "--frequency",
+        choices=["daily", "weekly", "monthly"],
+        default="daily",
+        help="定时频率: daily(每天), weekly(每周), monthly(每月)"
+    )
+    parser.add_argument(
+        "--time",
+        default="09:00",
+        help="执行时间，格式为 HH:MM (默认: 09:00)"
+    )
+    parser.add_argument(
+        "--weekday",
+        choices=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+        help="当frequency为weekly时指定星期几"
+    )
     
     args = parser.parse_args()
     
@@ -174,7 +215,7 @@ if __name__ == "__main__":
         if args.mode == "once":
             run_once()
         else:
-            run_scheduler()
+            run_scheduler(args.frequency, args.time, args.weekday)
     except Exception as e:
         logger.error(f"❌ 程序运行失败: {str(e)}")
         sys.exit(1)

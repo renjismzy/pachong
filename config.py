@@ -29,7 +29,7 @@ FEISHU_UPLOAD_FILE_URL = "https://open.feishu.cn/open-apis/drive/v1/medias/uploa
 CRAWLER_CONFIG = {
     'baidu': {
         'base_url': 'https://aistudio.baidu.com/studio/match/search?pageSize=10&matchType=0&matchStatus=1&keyword=&orderBy=0',
-        'detail_url_template': 'https://aistudio.baidu.com/studio/match/detail/{}'
+        'detail_url_template': 'https://aistudio.baidu.com/competition/detail/{}'
     },
     'aliyun': {
         'base_url': 'https://tianchi.aliyun.com/v3/proxy/competition/api/race/page?visualTab=&raceName=&isActive=',

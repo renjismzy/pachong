@@ -53,7 +53,7 @@ def crawl_baidu():
             for item in items:
                 name = item['matchName']
                 intro = item['matchAbs']
-                link = f"https://aistudio.baidu.com/studio/match/detail/{item['id']}"
+                link = f"https://aistudio.baidu.com/competition/detail/{item['id']}"
                 
                 participants, prize, start_date, end_date = get_details(link)
 
