@@ -71,22 +71,27 @@
    - 检查 `api/index.py` 文件存在
    - 验证项目结构符合 Vercel 要求
 
-2. **Environment Variable Secret Reference Error**
+2. **Function Runtime Version Error**
+   - 错误信息：`Function Runtimes must have a valid version, for example 'now-php@1.0.0'`
+   - 解决方案：移除 `runtime` 字段，让 Vercel 自动检测 Python 运行时
+   - 已修复：从 `functions` 配置中移除了 `runtime` 字段
+
+3. **Environment Variable Secret Reference Error**
    - 错误信息：`Environment Variable "FEISHU_APP_ID" references Secret "feishu_app_id", which does not exist`
    - 解决方案：不要在 `vercel.json` 中使用 `@secret_name` 语法
    - 直接在 Vercel 控制台的 Environment Variables 页面设置变量
    - 已修复：移除了 `vercel.json` 中的 `env` 配置
 
-3. **Conflicting functions and builds configuration**
+4. **Conflicting functions and builds configuration**
    - 已修复：移除了冲突的 `builds` 和 `routes` 配置
    - 现在使用现代的 `functions` 和 `rewrites` 配置
-   - 指定了 Python 3.9 运行时
+   - 让 Vercel 自动检测 Python 运行时
 
-4. **导入模块失败**
+5. **导入模块失败**
    - 检查 `api/requirements.txt` 包含所需依赖
    - 确保环境变量配置正确
 
-5. **函数超时**
+6. **函数超时**
    - 已设置 30 秒超时时间
    - Vercel 免费版有执行时间限制
    - 考虑升级到 Pro 版本或优化爬虫逻辑
