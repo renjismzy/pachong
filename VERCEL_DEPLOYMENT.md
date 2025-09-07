@@ -68,12 +68,18 @@
    - 检查 `api/index.py` 文件存在
    - 验证项目结构符合 Vercel 要求
 
-2. **导入模块失败**
-   - 检查 `requirements-vercel.txt` 包含所需依赖
+2. **Conflicting functions and builds configuration**
+   - 已修复：移除了冲突的 `builds` 和 `routes` 配置
+   - 现在使用现代的 `functions` 和 `rewrites` 配置
+   - 指定了 Python 3.9 运行时
+
+3. **导入模块失败**
+   - 检查 `api/requirements.txt` 包含所需依赖
    - 确保环境变量配置正确
 
-3. **函数超时**
-   - Vercel 免费版有 10 秒执行时间限制
+4. **函数超时**
+   - 已设置 30 秒超时时间
+   - Vercel 免费版有执行时间限制
    - 考虑升级到 Pro 版本或优化爬虫逻辑
 
 ## 本地测试
